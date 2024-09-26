@@ -48,13 +48,87 @@ void free_tiles(tile** tiles, size_t size)
 void set_neighbors(tile** tiles, size_t size)
 {
   size_t i, j;
-
-
+  tile* temp;
+  
   for (i = 0; i < size; i++)
   {
     for (j = 0; j < size; j++)
     {
-      
+      temp = &tiles[i][j];
+      memset(temp->neighbors, 0, sizeof(temp->neighbors));
+      if (edge_tile(i, j, size))
+      {
+	if (!(i+j))
+	{
+	  temp->neighbors[0] = &tiles[i][j+1];
+          temp->neighbors[1] = &tiles[i+1][j];
+          temp->neighbors[2] = &tiles[i+1][j+1];
+	}
+	else if (i+j == size-1)
+	{
+	  if (!i)
+	  {
+            temp->neighbors[0] = &tiles[i][j-1];
+	    temp->neighbors[1] = &tiles[i+1][j-1];
+	    temp->neighbors[2] = &tiles[i+1][j];
+          }
+	  else
+	  {
+	    temp->neighbors[0] = &tiles[i-1][j];
+	    temp->neighbors[1] = &tiles[i-1][j+1];
+	    temp->neighbors[2] = &tiles[i][j+1];
+	  }
+	}
+	else if (i+j == 2*(size-1))
+	{
+	  temp->neighbors[0] = &tiles[i-1][j];
+	  temp->neighbors[1] = &tiles[i-1][j-1];
+	  temp->neighbors[2] = &tiles[i][j-1];
+	}
+	else if (i+j == j)
+	{
+	  temp->neighbors[0] = &tiles[i][j-1];
+	  temp->neighbors[1] = &tiles[i][j+1];
+	  temp->neighbors[2] = &tiles[i+1][j-1];
+	  temp->neighbors[3] = &tiles[i+1][j];
+	  temp->neighbors[4] = &tiles[i+1][j+1]; 	  
+	}
+	else if (i+j == j + (size-1))
+	{
+	  temp->neighbors[0] = &tiles[i][j-1];
+	  temp->neighbors[1] = &tiles[i][j+1];
+	  temp->neighbors[2] = &tiles[i-1][j-1];
+	  temp->neighbors[3] = &tiles[i-1][j];
+	  temp->neighbors[4] = &tiles[i-1][j+1]; 	  
+	}
+	else if (i+j == i)
+	{
+	  temp->neighbors[0] = &tiles[i-1][j];
+	  temp->neighbors[1] = &tiles[i-1][j+1];
+	  temp->neighbors[2] = &tiles[i][j+1];
+	  temp->neighbors[3] = &tiles[i+1][j];
+	  temp->neighbors[4] = &tiles[i+1][j+1]; 	  
+	}
+	else if (i+j == i + (size-1))
+	{
+	  temp->neighbors[0] = &tiles[i-1][j];
+	  temp->neighbors[1] = &tiles[i-1][j-1];
+	  temp->neighbors[2] = &tiles[i][j-1];
+	  temp->neighbors[3] = &tiles[i+1][j];
+	  temp->neighbors[4] = &tiles[i+1][j-1]; 	  
+	}
+      }
+      else
+      {
+	temp->neighbors[0] = &tiles[i-1][j-1];
+	temp->neighbors[1] = &tiles[i-1][j];
+	temp->neighbors[2] = &tiles[i-1][j+1];
+	temp->neighbors[3] = &tiles[i][j-1];
+	temp->neighbors[4] = &tiles[i][j+1];
+	temp->neighbors[5] = &tiles[i+1][j-1];
+	temp->neighbors[6] = &tiles[i+1][j];
+	temp->neighbors[7] = &tiles[i+1][j+1];
+      }
     }
   }
 }
