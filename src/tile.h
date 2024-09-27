@@ -22,5 +22,7 @@ tile** init_tiles(size_t size);
 void free_tiles(tile** tiles, size_t size);
 void set_neighbors(tile** tiles, size_t size);
 int edge_tile(size_t i, size_t j, size_t size);
+void draw_tiles(tile** tiles, size_t size);
+int compare(const void* x, const void* y);
 
 #endif

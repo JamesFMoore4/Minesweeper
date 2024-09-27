@@ -2,7 +2,7 @@ CC = gcc
 CLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 CFLAGS = -Wall -Wextra
 BIN = mines
-OBJECTS = main.o tile.o
+OBJECTS = main.o tile.o game.o
 INCLUDE = -I ../include/
 LIB = -L ../lib/
 
