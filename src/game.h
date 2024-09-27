@@ -9,6 +9,8 @@ void game_close(tile** tiles, size_t size);
 
 static void update(tile** tiles, size_t size);
 static void draw(tile** tiles, size_t size);
+static void highlight(tile** tiles, size_t size);
+static void flag(tile** tiles, size_t size);
 
 #endif
 

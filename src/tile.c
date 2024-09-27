@@ -36,8 +36,7 @@ tile** init_tiles(size_t size)
       temp->posy = voffset * (i-1);
       temp->width = hoffset;
       temp->height = voffset;
-      temp->flagged = 0;
-      temp->mined = 0;
+      temp->info = BIT_UNKNOWN;
     }
   }
 
@@ -91,23 +90,36 @@ void set_neighbors(tile** tiles, size_t size)
   }
 }
 
-//TODO: fix
 void draw_tiles(tile** tiles, size_t size)
 {
   size_t i, j;
   tile* temp;
+  char text[2];
 
   for (i = 1; i <= size; i++)
   {
     for (j = 1; j <= size; j++)
     {
       temp = &tiles[i][j];
+
+      if (FLAGGED(temp->info))
+	strncpy(text, "F", 2);
+      else if (QFLAGGED(temp->info))
+	strncpy(text, "Q", 2);
+      else if (UNKNOWN(temp->info) ||
+	       !NUM_MINES(temp->info))
+	strncpy(text, " ", 2);
+      else
+	sprintf(text, "%d", NUM_MINES(temp->info));
+      
       DrawRectangle(temp->posx, temp->posy,
 		    temp->width, temp->height,
 		    temp->color);
       DrawRectangleLines(temp->posx, temp->posy,
 		    temp->width, temp->height,
 		    BLACK);
+      DrawText(text, temp->posx + (0.25f * temp->width),
+	       temp->posy + (0.25f * temp->height), 32, BLACK);
     }
   }
 }
@@ -119,5 +131,19 @@ int compare(const void* x, const void* y)
   t1 = (const tile*) x;
   t2 = (const tile*) y;
 
-  return t1->width < t2->width ? 1 : 0;
+  if (t1->width < t2->width) return 1;
+  return t1->width == t2->width ? 0 : -1;
+}
+
+tile* get_tile(tile** tiles, size_t size)
+{
+  int i, j, hoffset, voffset;
+
+  hoffset = GetScreenWidth() / size;
+  voffset = GetScreenHeight() / size;
+
+  j = GetMouseX() / hoffset + 1;
+  i = GetMouseY() / voffset + 1;
+
+  return &tiles[i][j];
 }

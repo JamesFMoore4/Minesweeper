@@ -39,32 +39,57 @@ void game_close(tile** tiles, size_t size)
 
 static void update(tile** tiles, size_t size)
 {
-  // Last highlighted tile & previous color
-  static tile* hl_tile = NULL;
-  static Color prev_color = GRAY;
-  
-  tile* temp;
-  int i, j, hoffset, voffset;
-
-  if (!hl_tile)
-    hl_tile = &tiles[1][1];
-
-  hoffset = GetScreenWidth() / size;
-  voffset = GetScreenHeight() / size;
-
-  i = GetMouseY() / voffset + 1;
-  j = GetMouseX() / hoffset + 1;
-
-  temp = &tiles[i][j];
-  hl_tile->color = prev_color;
-  hl_tile = temp;
-  prev_color = hl_tile->color;
-  hl_tile->color = (Color){prev_color.r + 20, prev_color.g + 20, prev_color.b + 20, 255};
-  
+  highlight(tiles, size);
+  flag(tiles, size);
 }
 
 static void draw(tile** tiles, size_t size)
 {
   draw_tiles(tiles, size);
+}
+
+static void highlight(tile** tiles, size_t size)
+{
+  static tile* hl_tile = NULL;
+  static Color prev_color = GRAY;
+  
+  tile* tile;
+  int i, j, hoffset, voffset;
+
+  if (!hl_tile)
+    hl_tile = &tiles[1][1];
+
+  tile = get_tile(tiles, size);
+  hl_tile->color = prev_color;
+  hl_tile = tile;
+  prev_color = hl_tile->color;
+  hl_tile->color = (Color){prev_color.r + 20, prev_color.g + 20, prev_color.b + 20, 255};
+}
+
+static void flag(tile** tiles, size_t size)
+{
+  tile* tile;
+  
+  if (!IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    return;
+
+  tile = get_tile(tiles, size);
+
+  if (!UNKNOWN(tile->info))
+    return;
+
+  if (FLAGGED(tile->info))
+  {
+    tile->info = UNSET(tile->info, BIT_FLAG);
+    tile->info = SET(tile->info, BIT_QFLAG);
+  }
+  else if (QFLAGGED(tile->info))
+  {
+    tile->info = UNSET(tile->info, BIT_QFLAG);
+  }
+  else
+  {
+    tile->info = SET(tile->info, BIT_FLAG);
+  }
 }
 
