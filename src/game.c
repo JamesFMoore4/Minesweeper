@@ -2,6 +2,7 @@
 
 size_t bytes_allocated;
 panel tile_panel;
+int game_status;
 
 static mode cur_mode;
 
@@ -20,6 +21,7 @@ tile** game_init(size_t* size)
   srand(time(NULL));
 
   cur_mode = PREGAME;
+  game_status = 0;
   
   tile_panel.posx = 25;
   tile_panel.posy = 25;
@@ -36,7 +38,7 @@ tile** game_init(size_t* size)
 
 void game_loop(tile** tiles, size_t size)
 {
-  while (!WindowShouldClose())
+  while (!WindowShouldClose() && !game_status)
   {
     update(tiles, size);
     BeginDrawing();
@@ -55,17 +57,28 @@ void game_close(tile** tiles, size_t size)
 static void update(tile** tiles, size_t size)
 {
   tile* clicked;
-  
-  if (cur_mode == PREGAME)
+
+  if (cur_mode == MENU)
+  {
+    // Draw menu 
+  }
+  else if (cur_mode == PREGAME)
   {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
 	(clicked = get_tile(tiles, size)))
     {
       set_mines(tiles, clicked, size);
       set_all_num_mines(tiles, size);
-      set_safe_tile_colors(tiles, clicked, size);
+      set_safe_tile_colors(clicked, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
       cur_mode = INGAME;
     }
+  }
+  else 
+  {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && (clicked = get_tile(tiles, size)))
+      process_tile_click(clicked);
+    if (!game_status)
+      win_check(tiles, size);
   }
   
   if (cur_mode != MENU)
@@ -169,7 +182,6 @@ static void set_mines(tile** tiles,
       mines++;
     }
   }
-  
 }
 
 static int safe(size_t vindex, size_t hindex, tile** tiles, tile* clicked)
@@ -186,13 +198,13 @@ static int safe(size_t vindex, size_t hindex, tile** tiles, tile* clicked)
   return 1;
 }
 
-static void set_safe_tile_colors(tile** tiles, tile* clicked, size_t size)
+static void set_safe_tile_colors(tile* clicked, uint8_t flags)
 {
   size_t i;
   tile* temp;
-  
+
   clicked->color = BEIGE;
-  clicked->info = UNSET(clicked->info, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
+  clicked->info = UNSET(clicked->info, flags);
 
   for (i = 0; i < 8; i++)
   {
@@ -200,18 +212,62 @@ static void set_safe_tile_colors(tile** tiles, tile* clicked, size_t size)
 
     if (temp->width)
     {
-      if (!NUM_MINES(temp->info) && !temp->visited)
+      if (!NUM_MINES(temp->info) && !temp->visited && !MINED(temp->info))
       {
 	temp->visited = 1;
-	set_safe_tile_colors(tiles, temp, size);
+	set_safe_tile_colors(temp, flags);
       }
       else
       {
-	temp->color = BEIGE;
-        temp->info = UNSET(temp->info, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
-      }
-      
+	temp->visited = 1;
+	temp->info = UNSET(temp->info, flags);
+	if (!MINED(temp->info)) temp->color = BEIGE;
+      }   
     }
   }
-    
+}
+
+static void process_tile_click(tile* clicked)
+{
+  if (IsKeyDown(KEY_LEFT_SHIFT) && !UNKNOWN(clicked->info))
+  {
+    if (num_flags(clicked) != NUM_MINES(clicked->info))
+      return;
+    if (!flags_correct(clicked))
+      game_status = -1;
+    else
+      set_safe_tile_colors(clicked, BIT_UNKNOWN);
+  }
+  else
+  {
+    if (MINED(clicked->info)) 
+      game_status = -1;
+    else
+    {
+      if (!NUM_MINES(clicked->info))
+	set_safe_tile_colors(clicked, BIT_UNKNOWN);
+      else
+      {
+	clicked->color = BEIGE;
+        clicked->info = UNSET(clicked->info, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
+      }
+    }
+  }
+}
+
+static void win_check(tile** tiles, size_t size)
+{
+  size_t i, j, total_tiles, total_mines;
+  tile* temp;
+  
+  total_tiles = size * size;
+  total_mines = 0.20f * total_tiles;
+  total_tiles -= total_mines;
+
+  for (i = 1; i <= size; i++)
+    for (j = 1; j <= size; j++)
+      if (!UNKNOWN(tiles[i][j].info))
+	total_tiles--;
+
+  game_status = !total_tiles;
 }

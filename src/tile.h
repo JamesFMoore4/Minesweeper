@@ -45,5 +45,7 @@ tile* get_tile(tile** tiles, size_t size);
 void resize_tiles(tile** tiles, size_t size);
 void set_num_mines(tile* tile);
 void set_all_num_mines(tile** tiles, size_t size);
+uint8_t num_flags(tile* clicked);
+int flags_correct(tile* clicked);
 
 #endif

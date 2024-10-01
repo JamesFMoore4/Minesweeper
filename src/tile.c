@@ -191,3 +191,33 @@ void set_all_num_mines(tile** tiles, size_t size)
     for (j = 1; j < size; j++)
       set_num_mines(&tiles[i][j]);
 }
+
+uint8_t num_flags(tile* clicked)
+{
+  size_t i;
+  uint8_t flags;
+
+  flags = 0;
+  for (i = 0; i < 8; i++)
+  {
+    if (FLAGGED(clicked->neighbors[i]->info))
+      flags++;
+  }
+
+  return flags;
+}
+
+int flags_correct(tile* clicked)
+{
+  size_t i;
+  tile* temp;
+
+  for (i = 0; i < 8; i++)
+  {
+    temp = clicked->neighbors[i];
+    if (MINED(temp->info) && !FLAGGED(temp->info))
+      return 0;
+  }
+
+  return 1;
+}
