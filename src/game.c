@@ -1,6 +1,7 @@
 #include "game.h"
 
 size_t bytes_allocated;
+panel tile_panel;
 
 tile** game_init(size_t* size)
 {
@@ -9,9 +10,15 @@ tile** game_init(size_t* size)
   bytes_allocated = 0;
   *size = 16;
 
-  InitWindow(800, 800, "Minesweeper");
+  InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Minesweeper");
+  SetWindowState(FLAG_WINDOW_RESIZABLE);
+  SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
   SetTargetFPS(60);
 
+  tile_panel.posx = 25;
+  tile_panel.posy = 25;
+  tile_panel.height = 0.75f * WINDOW_HEIGHT;
+  tile_panel.width = tile_panel.height;
   tiles = init_tiles(*size);
   printf("KB allocated: %zu\n",
 	 bytes_allocated / 1000);
@@ -25,7 +32,7 @@ void game_loop(tile** tiles, size_t size)
   {
     update(tiles, size);
     BeginDrawing();
-    ClearBackground(GRAY);
+    ClearBackground((Color){75, 75, 75, 255});
     draw(tiles, size);
     EndDrawing();    
   }
@@ -39,6 +46,7 @@ void game_close(tile** tiles, size_t size)
 
 static void update(tile** tiles, size_t size)
 {
+  resize(tiles, size);
   highlight(tiles, size);
   flag(tiles, size);
 }
@@ -59,21 +67,27 @@ static void highlight(tile** tiles, size_t size)
   if (!hl_tile)
     hl_tile = &tiles[1][1];
 
-  tile = get_tile(tiles, size);
-  hl_tile->color = prev_color;
-  hl_tile = tile;
-  prev_color = hl_tile->color;
-  hl_tile->color = (Color){prev_color.r + 20, prev_color.g + 20, prev_color.b + 20, 255};
+  if (tile = get_tile(tiles, size))
+  {
+    hl_tile->color = prev_color;
+    hl_tile = tile;
+    prev_color = hl_tile->color;
+    hl_tile->color = (Color){prev_color.r + 20, prev_color.g + 20, prev_color.b + 20, 255};
+  }
+  else
+  {
+    hl_tile->color = prev_color;
+    hl_tile = NULL;
+  }
+  
 }
 
 static void flag(tile** tiles, size_t size)
 {
   tile* tile;
   
-  if (!IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+  if (!IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || !(tile = get_tile(tiles, size)))
     return;
-
-  tile = get_tile(tiles, size);
 
   if (!UNKNOWN(tile->info))
     return;
@@ -93,3 +107,15 @@ static void flag(tile** tiles, size_t size)
   }
 }
 
+static void resize(tile** tiles, size_t size)
+{
+  static int prev_height = WINDOW_HEIGHT;
+  static int prev_width = WINDOW_WIDTH;
+
+  if (GetScreenHeight() != prev_height || GetScreenWidth() != prev_width)
+  {
+    tile_panel.height = 0.75f * GetScreenHeight();
+    tile_panel.width = tile_panel.height;
+    resize_tiles(tiles, size);
+  }
+}

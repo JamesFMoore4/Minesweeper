@@ -1,17 +1,17 @@
 #include "tile.h"
 
 extern size_t bytes_allocated;
+extern panel tile_panel;
 
 tile** init_tiles(size_t size)
 {
   tile** tiles, *temp;
   size_t i, j, asize, amount;
-  int scr_width, scr_height, hoffset, voffset;
-
-  scr_width = GetScreenWidth();
-  scr_height = GetScreenHeight();
-  hoffset = scr_width / size;
-  voffset = scr_height / size;
+  int hoffset, voffset;
+  
+  hoffset = tile_panel.width / size;
+  voffset = tile_panel.height / size;
+  
   asize = size + 2;
   amount = asize*sizeof(tile);
   
@@ -32,14 +32,15 @@ tile** init_tiles(size_t size)
     {
       temp = &tiles[i][j];
       temp->color = GRAY;
-      temp->posx = hoffset * (j-1);
-      temp->posy = voffset * (i-1);
+      temp->posx = hoffset * (j-1) + tile_panel.posx;
+      temp->posy = voffset * (i-1) + tile_panel.posy;
       temp->width = hoffset;
       temp->height = voffset;
       temp->info = BIT_UNKNOWN;
     }
   }
 
+  // Zero out edge tiles
   for (i = 0; i < asize; i++)
   {
     memset(&tiles[i][0], 0, sizeof(tile));
@@ -105,7 +106,7 @@ void draw_tiles(tile** tiles, size_t size)
       if (FLAGGED(temp->info))
 	strncpy(text, "F", 2);
       else if (QFLAGGED(temp->info))
-	strncpy(text, "Q", 2);
+	strncpy(text, "?", 2);
       else if (UNKNOWN(temp->info) ||
 	       !NUM_MINES(temp->info))
 	strncpy(text, " ", 2);
@@ -137,13 +138,53 @@ int compare(const void* x, const void* y)
 
 tile* get_tile(tile** tiles, size_t size)
 {
-  int i, j, hoffset, voffset;
+  int i, j, mposx, mposy;
+  int posx, posy, width, height;
 
-  hoffset = GetScreenWidth() / size;
-  voffset = GetScreenHeight() / size;
+  mposx = GetMouseX();
+  mposy = GetMouseY();
 
-  j = GetMouseX() / hoffset + 1;
-  i = GetMouseY() / voffset + 1;
+  for (i = 1; i <= size; i++)
+  {
+    for (j = 1; j <= size; j++)
+    {
+      posx = tiles[i][j].posx;
+      posy = tiles[i][j].posy;
+      width = tiles[i][j].width;
+      height = tiles[i][j].height;
 
-  return &tiles[i][j];
+      if (mposx > posx &&
+	mposx < posx + width &&
+	mposy > posy &&
+	mposy < posy + height)
+      {
+	return &tiles[i][j];
+      }
+    }
+  }
+
+  return NULL;
+}
+
+void resize_tiles(tile** tiles, size_t size)
+{
+  size_t i, j;
+  int hoffset, voffset;
+  tile* temp;
+  
+  hoffset = tile_panel.width / size;
+  voffset = tile_panel.height / size;
+
+  for (i = 1; i <= size; i++)
+  {
+    for (j = 1; j <= size; j++)
+    {
+      temp = &tiles[i][j];
+      
+      temp->posx = hoffset * (j-1) + tile_panel.posx;
+      temp->posy = voffset * (i-1) + tile_panel.posy;
+      temp->width = hoffset;
+      temp->height = voffset;
+    }
+  }
 }

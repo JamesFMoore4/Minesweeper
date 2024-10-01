@@ -7,6 +7,8 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "panel.h"
+
 #define BIT_MINE 0x10
 #define BIT_FLAG 0x20
 #define BIT_QFLAG 0x40
@@ -39,5 +41,6 @@ void set_neighbors(tile** tiles, size_t size);
 void draw_tiles(tile** tiles, size_t size);
 int compare(const void* x, const void* y);
 tile* get_tile(tile** tiles, size_t size);
+void resize_tiles(tile** tiles, size_t size);
 
 #endif
