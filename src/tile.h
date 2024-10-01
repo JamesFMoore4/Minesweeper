@@ -15,13 +15,13 @@
 #define BIT_QFLAG 0x40
 #define BIT_UNKNOWN 0x80
 
-#define MINED(info) ((info) & 0x10)
-#define FLAGGED(info) ((info) & 0x20)
-#define QFLAGGED(info) ((info) & 0x40)
-#define UNKNOWN(info) ((info) & 0x80)
-#define NUM_MINES(info) (((info) << 4) >> 4)
+#define MINED(info) ((info) & BIT_MINE)
+#define FLAGGED(info) ((info) & BIT_FLAG)
+#define QFLAGGED(info) ((info) & BIT_QFLAG)
+#define UNKNOWN(info) ((info) & BIT_UNKNOWN)
+#define NUM_MINES(info) ((info) & 0xF)
 #define SET(info, bit) ((info) | (bit))
-#define UNSET(info, bit) ((info) ^ (bit))
+#define UNSET(info, bit) ((info) & ~(bit))
 
 typedef uint8_t bitvec_t;
 
@@ -33,6 +33,7 @@ typedef struct tile
   int posy;
   int width;
   int height;
+  int visited;
   bitvec_t info;
 } tile;
 
@@ -40,8 +41,9 @@ tile** init_tiles(size_t size);
 void free_tiles(tile** tiles, size_t size);
 void set_neighbors(tile** tiles, size_t size);
 void draw_tiles(tile** tiles, size_t size);
-int compare(const void* x, const void* y);
 tile* get_tile(tile** tiles, size_t size);
 void resize_tiles(tile** tiles, size_t size);
+void set_num_mines(tile* tile);
+void set_all_num_mines(tile** tiles, size_t size);
 
 #endif

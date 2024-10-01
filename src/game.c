@@ -20,11 +20,14 @@ tile** game_init(size_t* size)
   srand(time(NULL));
 
   cur_mode = PREGAME;
+  
   tile_panel.posx = 25;
   tile_panel.posy = 25;
   tile_panel.height = 0.75f * WINDOW_HEIGHT;
   tile_panel.width = tile_panel.height;
+  
   tiles = init_tiles(*size);
+  
   printf("KB allocated: %zu\n",
 	 bytes_allocated / 1000);
 
@@ -59,7 +62,8 @@ static void update(tile** tiles, size_t size)
 	(clicked = get_tile(tiles, size)))
     {
       set_mines(tiles, clicked, size);
-      // Color tiles, display numbers
+      set_all_num_mines(tiles, size);
+      set_safe_tile_colors(tiles, clicked, size);
       cur_mode = INGAME;
     }
   }
@@ -83,25 +87,27 @@ static void draw(tile** tiles, size_t size)
 static void highlight(tile** tiles, size_t size)
 {
   static tile* hl_tile = NULL;
-  static Color prev_color = GRAY;
+  static Color prev_color = (Color){0,0,0,0};
   
   tile* tile;
   int i, j, hoffset, voffset;
-
-  if (!hl_tile)
-    hl_tile = &tiles[1][1];
-
-  if (tile = get_tile(tiles, size))
+    
+  if ((tile = get_tile(tiles, size)) && UNKNOWN(tile->info) && hl_tile != tile)
   {
-    hl_tile->color = prev_color;
+    if (hl_tile)
+      hl_tile->color = prev_color;
+
     hl_tile = tile;
     prev_color = hl_tile->color;
     hl_tile->color = (Color){prev_color.r + 20, prev_color.g + 20, prev_color.b + 20, 255};
   }
-  else
+  else if (!tile || !UNKNOWN(tile->info))
   {
-    hl_tile->color = prev_color;
+    if (hl_tile && UNKNOWN(hl_tile->info))
+      hl_tile->color = prev_color;
+    
     hl_tile = NULL;
+    prev_color = (Color){0,0,0,0};
   }
   
 }
@@ -144,24 +150,68 @@ static void resize(tile** tiles, size_t size)
   }
 }
 
-//TODO
 static void set_mines(tile** tiles,
-		      tile* clicked_tile, size_t size)
+		      tile* clicked, size_t size)
 {
-  size_t i, j, mines;
-  tile* temp;
-  const size_t max_mines = 0.20f * (size * size);
-
+  size_t i, j, mines, max_mines;
+  
+  max_mines = 0.20f * (size * size);
   mines = 0;
+  
   while (mines < max_mines)
   {
     i = (size_t) (rand() % size + 1);
     j = (size_t) (rand() % size + 1);
-    if (1) // insert condition that guarantees neighbor tiles around first clicked tile are safe
+    
+    if (safe(i, j, tiles, clicked) && !MINED(tiles[i][j].info)) 
     {
       tiles[i][j].info = SET(tiles[i][j].info, BIT_MINE);
       mines++;
     }
   }
   
+}
+
+static int safe(size_t vindex, size_t hindex, tile** tiles, tile* clicked)
+{
+  size_t i;
+  
+  if (&tiles[vindex][hindex] == clicked)
+    return 0;
+
+  for (i = 0; i < 8; i++)
+    if (&tiles[vindex][hindex] == clicked->neighbors[i])
+      return 0;
+
+  return 1;
+}
+
+static void set_safe_tile_colors(tile** tiles, tile* clicked, size_t size)
+{
+  size_t i;
+  tile* temp;
+  
+  clicked->color = BEIGE;
+  clicked->info = UNSET(clicked->info, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
+
+  for (i = 0; i < 8; i++)
+  {
+    temp = clicked->neighbors[i];
+
+    if (temp->width)
+    {
+      if (!NUM_MINES(temp->info) && !temp->visited)
+      {
+	temp->visited = 1;
+	set_safe_tile_colors(tiles, temp, size);
+      }
+      else
+      {
+	temp->color = BEIGE;
+        temp->info = UNSET(temp->info, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
+      }
+      
+    }
+  }
+    
 }

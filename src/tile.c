@@ -11,23 +11,21 @@ tile** init_tiles(size_t size)
   
   hoffset = tile_panel.width / size;
   voffset = tile_panel.height / size;
-  
   asize = size + 2;
-  amount = asize*sizeof(tile);
+  amount = asize * sizeof(tile);
   
   tiles = (tile**)malloc(asize*sizeof(tile*));
   bytes_allocated += asize*sizeof(tile*);
 
   // Padding to eliminate bounds checking
-  tiles[0] = (tile*)malloc(amount);
-  tiles[asize-1] = (tile*)malloc(amount);
-  memset(tiles[0], 0, amount);
-  memset(tiles[asize-1], 0, amount);
+  tiles[0] = (tile*)calloc(asize, sizeof(tile));
+  tiles[asize-1] = (tile*)calloc(asize, sizeof(tile));
   
   for (i = 1; i <= size; i++)
   {
-    tiles[i] = (tile*)malloc(amount);
+    tiles[i] = (tile*)calloc(asize, sizeof(tile));
     bytes_allocated += amount;
+    
     for (j = 1; j <= size; j++)
     {
       temp = &tiles[i][j];
@@ -36,15 +34,9 @@ tile** init_tiles(size_t size)
       temp->posy = voffset * (i-1) + tile_panel.posy;
       temp->width = hoffset;
       temp->height = voffset;
-      temp->info = BIT_UNKNOWN;
+      temp->visited = 0;
+      temp->info = SET(temp->info, BIT_UNKNOWN);
     }
-  }
-
-  // Zero out edge tiles
-  for (i = 0; i < asize; i++)
-  {
-    memset(&tiles[i][0], 0, sizeof(tile));
-    memset(&tiles[i][asize-1], 0, sizeof(tile));
   }
 
   set_neighbors(tiles, size);
@@ -72,7 +64,6 @@ void set_neighbors(tile** tiles, size_t size)
     for (j = 1; j <= size; j++)
     {
       temp = &tiles[i][j];
-      memset(temp->neighbors, 0, sizeof(temp->neighbors));
       
       temp->neighbors[0] = &tiles[i-1][j-1];
       temp->neighbors[1] = &tiles[i-1][j];
@@ -84,9 +75,6 @@ void set_neighbors(tile** tiles, size_t size)
       temp->neighbors[5] = &tiles[i+1][j-1];
       temp->neighbors[6] = &tiles[i+1][j];
       temp->neighbors[7] = &tiles[i+1][j+1];
-
-      // Push pointers to null tiles to back of array
-      qsort(temp->neighbors, 8, sizeof(tile*), compare);
     }
   }
 }
@@ -112,6 +100,7 @@ void draw_tiles(tile** tiles, size_t size)
 	strncpy(text, " ", 2);
       else
 	sprintf(text, "%d", NUM_MINES(temp->info));
+
       
       DrawRectangle(temp->posx, temp->posy,
 		    temp->width, temp->height,
@@ -123,17 +112,6 @@ void draw_tiles(tile** tiles, size_t size)
 	       temp->posy + (0.25f * temp->height), 32, BLACK);
     }
   }
-}
-
-int compare(const void* x, const void* y)
-{
-  const tile* t1, *t2;
-
-  t1 = (const tile*) x;
-  t2 = (const tile*) y;
-
-  if (t1->width < t2->width) return 1;
-  return t1->width == t2->width ? 0 : -1;
 }
 
 tile* get_tile(tile** tiles, size_t size)
@@ -187,4 +165,29 @@ void resize_tiles(tile** tiles, size_t size)
       temp->height = voffset;
     }
   }
+}
+
+void set_num_mines(tile* tile)
+{
+  size_t i;
+  uint8_t num_mines;
+
+  if (MINED(tile->info))
+    return;
+  
+  num_mines = 0;
+  for (i = 0; i < 8; i++)
+    if (MINED(tile->neighbors[i]->info))
+      num_mines++;
+
+  tile->info = SET(tile->info, num_mines);
+}
+
+void set_all_num_mines(tile** tiles, size_t size)
+{
+  size_t i, j;
+
+  for (i = 1; i < size; i++)
+    for (j = 1; j < size; j++)
+      set_num_mines(&tiles[i][j]);
 }

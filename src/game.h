@@ -19,7 +19,9 @@ static void highlight(tile** tiles, size_t size);
 static void flag(tile** tiles, size_t size);
 static void resize(tile** tiles, size_t size);
 static void set_mines(tile** tiles,
-		      tile* clicked_tile, size_t size);
+		      tile* clicked, size_t size);
+static int safe(size_t vindex, size_t hindex, tile** tiles, tile* clicked);
+static void set_safe_tile_colors(tile** tiles, tile* clicked, size_t size);
 
 #endif
 
