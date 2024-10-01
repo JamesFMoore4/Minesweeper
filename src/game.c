@@ -3,6 +3,8 @@
 size_t bytes_allocated;
 panel tile_panel;
 
+static mode cur_mode;
+
 tile** game_init(size_t* size)
 {
   tile** tiles;
@@ -15,6 +17,9 @@ tile** game_init(size_t* size)
   SetWindowMinSize(WINDOW_WIDTH, WINDOW_HEIGHT);
   SetTargetFPS(60);
 
+  srand(time(NULL));
+
+  cur_mode = PREGAME;
   tile_panel.posx = 25;
   tile_panel.posy = 25;
   tile_panel.height = 0.75f * WINDOW_HEIGHT;
@@ -46,14 +51,33 @@ void game_close(tile** tiles, size_t size)
 
 static void update(tile** tiles, size_t size)
 {
-  resize(tiles, size);
-  highlight(tiles, size);
-  flag(tiles, size);
+  tile* clicked;
+  
+  if (cur_mode == PREGAME)
+  {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+	(clicked = get_tile(tiles, size)))
+    {
+      set_mines(tiles, clicked, size);
+      // Color tiles, display numbers
+      cur_mode = INGAME;
+    }
+  }
+  
+  if (cur_mode != MENU)
+  {
+    resize(tiles, size);
+    highlight(tiles, size);
+    flag(tiles, size);
+  }
 }
 
 static void draw(tile** tiles, size_t size)
-{
-  draw_tiles(tiles, size);
+{ 
+  if (cur_mode != MENU)
+  {
+    draw_tiles(tiles, size);
+  }
 }
 
 static void highlight(tile** tiles, size_t size)
@@ -118,4 +142,26 @@ static void resize(tile** tiles, size_t size)
     tile_panel.width = tile_panel.height;
     resize_tiles(tiles, size);
   }
+}
+
+//TODO
+static void set_mines(tile** tiles,
+		      tile* clicked_tile, size_t size)
+{
+  size_t i, j, mines;
+  tile* temp;
+  const size_t max_mines = 0.20f * (size * size);
+
+  mines = 0;
+  while (mines < max_mines)
+  {
+    i = (size_t) (rand() % size + 1);
+    j = (size_t) (rand() % size + 1);
+    if (1) // insert condition that guarantees neighbor tiles around first clicked tile are safe
+    {
+      tiles[i][j].info = SET(tiles[i][j].info, BIT_MINE);
+      mines++;
+    }
+  }
+  
 }

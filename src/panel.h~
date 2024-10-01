@@ -1,9 +1,0 @@
-#ifndef PANEL
-#define PANEL
-
-typedef struct
-{
-  
-} panel;
-
-#endif

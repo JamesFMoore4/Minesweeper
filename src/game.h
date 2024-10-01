@@ -7,6 +7,8 @@
 #define WINDOW_HEIGHT 800
 #define WINDOW_WIDTH 800
 
+typedef enum {PREGAME, INGAME, MENU} mode;
+
 tile** game_init(size_t* size);
 void game_loop(tile** tiles, size_t size);
 void game_close(tile** tiles, size_t size);
@@ -16,6 +18,8 @@ static void draw(tile** tiles, size_t size);
 static void highlight(tile** tiles, size_t size);
 static void flag(tile** tiles, size_t size);
 static void resize(tile** tiles, size_t size);
+static void set_mines(tile** tiles,
+		      tile* clicked_tile, size_t size);
 
 #endif
 
