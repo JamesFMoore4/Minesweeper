@@ -8,13 +8,14 @@
 typedef struct
 {
   Color color;
+  Color outline;
   int posx;
   int posy;
   int width;
   int height;
   Color text_color;
   char* text;
-  void* (*on_click)(void*); // Modify later if necessary
+  int (*on_click)(void); // Modify later if necessary
 } button_t;
 
 void button_highlight(button_t*);

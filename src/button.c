@@ -34,7 +34,16 @@ int button_collision(button_t* selected, int mposx, int mposy)
   return collision;
 }
 
-void button_draw(button_t*)
+void button_draw(button_t* button)
 {
-
+  DrawRectangle(button->posx, button->posy,
+		button->width, button->height,
+		button->color);
+  DrawRectangleLines(button->posx, button->posy,
+		     button->width, button->height,
+		     button->outline);
+  DrawText(button->text, button->posx +
+	   (0.45f * button->width), button->posy +
+	   (0.45f * button->height), 32,
+	   button->text_color);
 }
