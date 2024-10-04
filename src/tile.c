@@ -77,9 +77,10 @@ int tile_is_qflagged(tile_t* selected)
 void tile_highlight(tile_t* selected)
 {
   static tile_t* hl_tile = NULL;
+  tile_t* last;
   Color temp;
 
-  if (hl_tile)
+  if (hl_tile && tile_is_unknown(hl_tile))
     hl_tile->color = GRAY;
 
   if (!selected || !tile_is_unknown(selected))
@@ -91,7 +92,7 @@ void tile_highlight(tile_t* selected)
     temp = selected->color;
     hl_tile = selected;
     hl_tile->color = (Color){temp.r+20,temp.g+20,temp.b+20,255};
-  }  
+  }
 }
 
 int tile_get_num_mines(tile_t* selected)
@@ -115,7 +116,7 @@ int tile_flags_correct(tile_t* selected)
   int i;
 
   if (tile_get_num_mines(selected) != tile_get_num_flags(selected))
-    return 0;
+    return -1;
 
   for (i = 0; i < 8; i++)
     if (tile_is_mined(selected->neighbors[i]) && !tile_is_flagged(selected->neighbors[i]))

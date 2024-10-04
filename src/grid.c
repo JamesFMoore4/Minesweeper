@@ -289,3 +289,18 @@ static int grid_safe_to_mine(grid_t* grid, tile_t* selected,
   return 1;
 }
 
+int grid_all_tiles_discovered(grid_t* grid)
+{
+  int i, j, total_tiles;
+  tile_t* temp;
+  
+  total_tiles = grid->size * grid->size;
+  total_tiles -= PERCENT_MINED * total_tiles;
+
+  for (i = 1; i <= grid->size; i++)
+    for (j = 1; j <= grid->size; j++)
+      if (!tile_is_unknown(&grid->tiles[i][j]))
+	total_tiles--;
+
+  return !total_tiles;
+}

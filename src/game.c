@@ -6,7 +6,6 @@ static mode cur_mode;
 static void update(grid_t*);
 static void draw(grid_t*);
 static void process_tile_click(tile_t*);
-static void win_check(grid_t*);
 
 grid_t* game_init(void)
 {
@@ -50,29 +49,26 @@ void game_close(grid_t* grid)
 static void update(grid_t* grid)
 {
   tile_t* selected;
+  int tile_clicked;
+
+  tile_clicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+    (selected = grid_get_selected_tile(grid));
 
   if (cur_mode == MENU)
   {
-    // Draw menu 
+    // Handle menu events
   }
-  else if (cur_mode == PREGAME)
+  else if (cur_mode == PREGAME && tile_clicked)
   {
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-	(selected = grid_get_selected_tile(grid)))
-    {
-      grid_set_mines(grid, selected);
-      grid_set_num_mines(grid);
-      grid_discover_safe_tiles(selected, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
-      cur_mode = INGAME;
-    }
+    grid_set_mines(grid, selected);
+    grid_set_num_mines(grid);
+    grid_discover_safe_tiles(selected, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
+    cur_mode = INGAME;
   }
-  else 
+  else if (cur_mode == INGAME && tile_clicked)
   {
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
-	&& (selected = grid_get_selected_tile(grid)))
-      process_tile_click(selected);
-    if (!game_status)
-      win_check(grid);
+    process_tile_click(selected);
+    game_status  = !game_status ? grid_all_tiles_discovered(grid) : game_status;
   }
   
   if (cur_mode != MENU)
@@ -92,46 +88,38 @@ static void draw(grid_t* grid)
 }
 
 static void process_tile_click(tile_t* selected)
-{
+{ 
   if (IsKeyDown(KEY_LEFT_SHIFT) && !tile_is_unknown(selected))
-  {
-    if (tile_get_num_flags(selected) != tile_get_num_mines(selected))
-      return;
-    if (!tile_flags_correct(selected))
+  {    
+    switch (tile_flags_correct(selected))
+    {
+    case -1:
+      break;
+    case 0:
       game_status = -1;
-    else
+      break;
+    case 1:
       grid_discover_safe_tiles(selected, BIT_UNKNOWN);
+      break;
+    }
+
+    return;
+  }
+  
+  if (tile_is_mined(selected))
+  {
+    game_status = -1;
+    return;
+  }
+
+  if (!tile_get_num_mines(selected))
+  {
+    grid_discover_safe_tiles(selected, BIT_UNKNOWN);
   }
   else
   {
-    if (tile_is_mined(selected)) 
-      game_status = -1;
-    else
-    {
-      if (!tile_get_num_mines(selected))
-	grid_discover_safe_tiles(selected, BIT_UNKNOWN);
-      else
-      {
-	selected->color = BEIGE;
-	tile_set_multiple(selected, 0, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
-      }
-    }
+    selected->color = BEIGE;
+    tile_set_multiple(selected, 0, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
   }
 }
 
-static void win_check(grid_t* grid)
-{
-  int i, j, total_tiles, total_mines;
-  tile_t* temp;
-  
-  total_tiles = grid->size * grid->size;
-  total_mines = PERCENT_MINED * total_tiles;
-  total_tiles -= total_mines;
-
-  for (i = 1; i <= grid->size; i++)
-    for (j = 1; j <= grid->size; j++)
-      if (!tile_is_unknown(&grid->tiles[i][j]))
-	total_tiles--;
-
-  game_status = !total_tiles;
-}
