@@ -3,7 +3,7 @@
 void tile_set_num_mines(tile_t* selected)
 {
   int i;
-  uint8_t num_mines;
+  bitvec_t num_mines;
 
   if (tile_is_mined(selected)) return;
 
@@ -46,7 +46,7 @@ void tile_set_qflagged(tile_t* selected, int set)
     selected->info &= ~BIT_QFLAG;
 }
 
-void tile_set_multiple(tile_t* selected, int set, uint8_t flags)
+void tile_set_multiple(tile_t* selected, int set, bitvec_t flags)
 {
   if (set)
     selected->info |= flags;
@@ -124,3 +124,14 @@ int tile_flags_correct(tile_t* selected)
   return 1;
 }
 
+int tile_collision(tile_t* selected, int mposx, int mposy)
+{
+  int collision;
+
+  collision = mposx > selected->posx;
+  collision = collision && (mposx < selected->posx + selected->width);
+  collision = collision &&  (mposy > selected->posy);
+  collision = collision && (mposy < selected->posy + selected->height);
+
+  return collision;
+}

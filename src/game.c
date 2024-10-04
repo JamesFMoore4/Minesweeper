@@ -62,7 +62,7 @@ static void update(grid_t* grid)
     {
       grid_set_mines(grid, selected);
       grid_set_num_mines(grid);
-      grid_discover_safe_tiles(selected, BIT_UNKNOWN); 
+      grid_discover_safe_tiles(selected, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
       cur_mode = INGAME;
     }
   }
@@ -125,7 +125,7 @@ static void win_check(grid_t* grid)
   tile_t* temp;
   
   total_tiles = grid->size * grid->size;
-  total_mines = 0.20f * total_tiles;
+  total_mines = PERCENT_MINED * total_tiles;
   total_tiles -= total_mines;
 
   for (i = 1; i <= grid->size; i++)

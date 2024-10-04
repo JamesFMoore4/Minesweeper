@@ -119,44 +119,55 @@ void grid_flag(grid_t* grid)
 
 tile_t* grid_get_selected_tile(grid_t* grid)
 {
+  static tile_t* last = NULL;
+  tile_t temp;
   int i, j, mposx, mposy;
-  int posx, posy, width, height;
 
   mposx = GetMouseX();
   mposy = GetMouseY();
 
+  temp.posx = grid->posx;
+  temp.posy = grid->posy;
+  temp.width = grid->width;
+  temp.height = grid->height;
+
+  if (!tile_collision(&temp, mposx, mposy))
+    return (last = NULL);
+
+  if (last)
+  {
+    if (tile_collision(last, mposx, mposy))
+      return last;
+    for (i = 0; i < 8; i++)
+      if (last->neighbors[i]->width && tile_collision(last->neighbors[i], mposx, mposy))
+	return (last = last->neighbors[i]);
+  }
+  
   for (i = 1; i <= grid->size; i++)
   {
     for (j = 1; j <= grid->size; j++)
     {
-      posx = grid->tiles[i][j].posx;
-      posy = grid->tiles[i][j].posy;
-      width = grid->tiles[i][j].width;
-      height = grid->tiles[i][j].height;
-
-      if (mposx > posx && mposx < posx + width &&
-	  mposy > posy && mposy < posy + height)
-	return &grid->tiles[i][j];
+      if (tile_collision(&grid->tiles[i][j], mposx, mposy))
+	return (last = &grid->tiles[i][j]);
     }
   }
 
-  return NULL;
+  return (last = NULL);
 }
 
 void grid_set_mines(grid_t* grid, tile_t* selected)
 {
   int i, j, mines, total_mines;
 
-  total_mines = 0.20f * (grid->size * grid->size);
   mines = 0;
+  total_mines = PERCENT_MINED * (grid->size * grid->size);
 
   while (mines < total_mines)
   {
     i = rand() % grid->size + 1;
     j = rand() % grid->size + 1;
 
-    if (grid_safe_to_mine(grid, selected, i, j) &&
-	!tile_is_mined(&grid->tiles[i][j]))
+    if (grid_safe_to_mine(grid, selected, i, j) && !tile_is_mined(&grid->tiles[i][j]))
     {
       tile_set_mined(&grid->tiles[i][j]);
       mines++;
@@ -201,9 +212,9 @@ void grid_resize(grid_t* grid)
   }
 }
 
-void grid_discover_safe_tiles(tile_t* selected, uint8_t flags)
+void grid_discover_safe_tiles(tile_t* selected, bitvec_t flags)
 {
-  int i;
+  int i, tile_is_blank, tile_not_mined;
   tile_t* temp;
 
   selected->color = BEIGE;
@@ -213,23 +224,23 @@ void grid_discover_safe_tiles(tile_t* selected, uint8_t flags)
   {
     temp = selected->neighbors[i];
 
-    if (temp->width)
+    if (!temp->width)
+      continue;
+
+    tile_not_mined = !tile_is_mined(temp);
+    tile_is_blank = !tile_get_num_mines(temp) && tile_not_mined;
+    tile_is_blank = tile_is_blank && !temp->visited;
+
+    temp->visited = 1;
+
+    if (tile_is_blank)
     {
-      if (!tile_get_num_mines(temp) &&
-	!temp->visited &&
-	  !tile_is_mined(temp))
-      {
-	temp->visited = 1;
-	grid_discover_safe_tiles(temp, flags);
-      }
-      else
-      {
-	temp->visited = 1;
-	tile_set_multiple(temp, 0, flags);
-	if (!tile_is_mined(temp))
-	  temp->color = BEIGE;
-      }
-      
+      grid_discover_safe_tiles(temp, flags);
+    }
+    else if (tile_not_mined)
+    {
+      tile_set_multiple(temp, 0, flags);
+      temp->color = BEIGE;
     }
   }
 }
@@ -261,17 +272,20 @@ static void grid_set_neighbors(tile_t** tiles, int size)
 
 // First clicked tile and its neighbors should not be mined
 static int grid_safe_to_mine(grid_t* grid, tile_t* selected,
-			     int hindex, int vindex)
+			     int vindex, int hindex)
 {
   int i;
+  tile_t* temp;
 
-  if (&grid->tiles[vindex][hindex] == selected)
+  temp = &grid->tiles[vindex][hindex];
+
+  if (temp == selected)
     return 0;
 
   for (i = 0; i < 8; i++)
-    if (&grid->tiles[vindex][hindex] ==
-	selected->neighbors[i])
+    if (temp == selected->neighbors[i])
       return 0;
 
   return 1;
 }
+

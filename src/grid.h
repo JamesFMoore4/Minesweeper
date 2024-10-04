@@ -23,6 +23,6 @@ tile_t* grid_get_selected_tile(grid_t*);
 void grid_set_mines(grid_t*, tile_t*);
 void grid_set_num_mines(grid_t*);
 void grid_resize(grid_t*);
-void grid_discover_safe_tiles(tile_t*, uint8_t);
+void grid_discover_safe_tiles(tile_t*, bitvec_t);
 
 #endif
