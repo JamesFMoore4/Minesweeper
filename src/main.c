@@ -1,12 +1,13 @@
 #include "game.h"
+#include "menu.h"
 
 int main(void)
 {
-  grid_t* grid;
-
-  grid = game_init();
-  game_loop(grid);
-  game_close(grid);
-  
+  game_init();
+  while (!WindowShouldClose())
+  {
+    game_loop(menu_loop());
+  }
+  game_close(); 
   return 0;
 }

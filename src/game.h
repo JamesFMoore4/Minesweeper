@@ -3,12 +3,13 @@
 
 #include "grid.h"
 #include "gamedef.h"
+#include "menu.h"
 
-typedef enum {MENU, PREGAME, INGAME} mode;
+typedef enum {PREGAME, INGAME} mode;
 
-grid_t* game_init(void);
-void game_loop(grid_t*);
-void game_close(grid_t*);
+void game_init(void);
+void game_loop(int);
+void game_close(void);
 
 #endif
 

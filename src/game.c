@@ -1,52 +1,46 @@
 #include "game.h"
 
-static int game_status;
-static mode cur_mode;
+static int game_update(grid_t*, mode*, int);
+static void game_draw(grid_t*);
+static int process_tile_click(tile_t*, int);
 
-static void update(grid_t*);
-static void draw(grid_t*);
-static void process_tile_click(tile_t*);
-
-grid_t* game_init(void)
+void game_init(void)
 {
-  int size, dimension;
-  grid_t* grid;
-  
   InitWindow(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, "Minesweeper");
   SetWindowState(FLAG_WINDOW_RESIZABLE);
   SetWindowMinSize(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
   SetTargetFPS(60);
 
   srand(time(NULL));
+}
 
+void game_loop(int size)
+{
+  grid_t* grid;
+  int dimension, game_status;
+  mode cur_mode;
+ 
   cur_mode = PREGAME;
   game_status = 0;
-  size = SIZE;
-  dimension = 0.75f * DEFAULT_WINDOW_HEIGHT;
-  grid = grid_init(SIZE, GRID_HOFFSET, GRID_VOFFSET, dimension, dimension);
-
-  return grid;
-}
-
-void game_loop(grid_t* grid)
-{
-  while (!WindowShouldClose() && !game_status)
+  dimension = 0.75f * GetScreenHeight();
+  grid = grid_init(size, GRID_HOFFSET, GRID_VOFFSET, dimension, dimension);
+  
+  while (!game_status)
   {
-    update(grid);
-    BeginDrawing();
-    ClearBackground((Color){75, 75, 75, 255});
-    draw(grid);
-    EndDrawing();    
+    if (WindowShouldClose()) break;
+    game_status = game_update(grid, &cur_mode, game_status);
+    game_draw(grid);
   }
+
+  grid_free(grid);
 }
 
-void game_close(grid_t* grid)
+void game_close(void)
 {
-  grid_free(grid);
   CloseWindow();
 }
 
-static void update(grid_t* grid)
+static int game_update(grid_t* grid, mode* cur_mode, int game_status)
 {
   tile_t* selected;
   int tile_clicked;
@@ -54,41 +48,36 @@ static void update(grid_t* grid)
   tile_clicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
     (selected = grid_get_selected_tile(grid));
 
-  if (cur_mode == MENU)
-  {
-    // Handle menu events
-  }
-  else if (cur_mode == PREGAME && tile_clicked)
+  if (*cur_mode == PREGAME && tile_clicked)
   {
     grid_set_mines(grid, selected);
     grid_set_num_mines(grid);
     grid_discover_safe_tiles(selected, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
-    cur_mode = INGAME;
+    *cur_mode = INGAME;
   }
-  else if (cur_mode == INGAME && tile_clicked)
+  else if (*cur_mode == INGAME && tile_clicked)
   {
-    process_tile_click(selected);
+    game_status = process_tile_click(selected, game_status);
     game_status  = !game_status ? grid_all_tiles_discovered(grid) : game_status;
   }
   
-  if (cur_mode != MENU)
-  {
-    grid_resize(grid);
-    grid_highlight(grid);
-    grid_flag(grid);
-  }
+  grid_resize(grid);
+  grid_highlight(grid);
+  grid_flag(grid);
+
+  return game_status;
 }
 
-static void draw(grid_t* grid)
-{ 
-  if (cur_mode != MENU)
-  {
-    grid_draw(grid);
-  }
+static void game_draw(grid_t* grid)
+{
+  BeginDrawing();
+  ClearBackground((Color){75, 75, 75, 255});
+  grid_draw(grid);
+  EndDrawing();
 }
 
-static void process_tile_click(tile_t* selected)
-{ 
+static int process_tile_click(tile_t* selected, int game_status)
+{  
   if (IsKeyDown(KEY_LEFT_SHIFT) && !tile_is_unknown(selected))
   {    
     switch (tile_flags_correct(selected))
@@ -102,15 +91,11 @@ static void process_tile_click(tile_t* selected)
       grid_discover_safe_tiles(selected, BIT_UNKNOWN);
       break;
     }
-
-    return;
+    return game_status;
   }
   
   if (tile_is_mined(selected))
-  {
-    game_status = -1;
-    return;
-  }
+    return -1;
 
   if (!tile_get_num_mines(selected))
   {
@@ -121,5 +106,6 @@ static void process_tile_click(tile_t* selected)
     selected->color = BEIGE;
     tile_set_multiple(selected, 0, BIT_UNKNOWN | BIT_FLAG | BIT_QFLAG);
   }
-}
 
+  return game_status;
+}
