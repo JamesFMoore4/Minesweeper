@@ -1,14 +1,12 @@
-#include "tile.h"
 #include "game.h"
 
 int main(void)
 {
-  tile** tiles;
-  size_t size;
+  grid_t* grid;
 
-  tiles = game_init(&size);
-  game_loop(tiles, size);
-  game_close(tiles, size);
+  grid = game_init();
+  game_loop(grid);
+  game_close(grid);
   
   return 0;
 }

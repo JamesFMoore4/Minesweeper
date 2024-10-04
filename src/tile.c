@@ -1,223 +1,126 @@
 #include "tile.h"
 
-extern size_t bytes_allocated;
-extern panel tile_panel;
-
-tile** init_tiles(size_t size)
+void tile_set_num_mines(tile_t* selected)
 {
-  tile** tiles, *temp;
-  size_t i, j, asize, amount;
-  int hoffset, voffset;
-  
-  hoffset = tile_panel.width / size;
-  voffset = tile_panel.height / size;
-  asize = size + 2;
-  amount = asize * sizeof(tile);
-  
-  tiles = (tile**)malloc(asize*sizeof(tile*));
-  bytes_allocated += asize*sizeof(tile*);
-
-  // Padding to eliminate bounds checking
-  tiles[0] = (tile*)calloc(asize, sizeof(tile));
-  tiles[asize-1] = (tile*)calloc(asize, sizeof(tile));
-  
-  for (i = 1; i <= size; i++)
-  {
-    tiles[i] = (tile*)calloc(asize, sizeof(tile));
-    bytes_allocated += amount;
-    
-    for (j = 1; j <= size; j++)
-    {
-      temp = &tiles[i][j];
-      temp->color = GRAY;
-      temp->posx = hoffset * (j-1) + tile_panel.posx;
-      temp->posy = voffset * (i-1) + tile_panel.posy;
-      temp->width = hoffset;
-      temp->height = voffset;
-      temp->visited = 0;
-      temp->info = SET(temp->info, BIT_UNKNOWN);
-    }
-  }
-
-  set_neighbors(tiles, size);
-  return tiles;
-}
-
-void free_tiles(tile** tiles, size_t size)
-{
-  size_t i, asize;
-
-  asize = size + 2;
-  for (i = 0; i < asize; i++)
-    free(tiles[i]);
-  free(tiles);
-  bytes_allocated = 0;
-}
-
-void set_neighbors(tile** tiles, size_t size)
-{
-  size_t i, j;
-  tile* temp;
-  
-  for (i = 1; i <= size; i++)
-  {
-    for (j = 1; j <= size; j++)
-    {
-      temp = &tiles[i][j];
-      
-      temp->neighbors[0] = &tiles[i-1][j-1];
-      temp->neighbors[1] = &tiles[i-1][j];
-      temp->neighbors[2] = &tiles[i-1][j+1];
-      
-      temp->neighbors[3] = &tiles[i][j-1];
-      temp->neighbors[4] = &tiles[i][j+1];
-      
-      temp->neighbors[5] = &tiles[i+1][j-1];
-      temp->neighbors[6] = &tiles[i+1][j];
-      temp->neighbors[7] = &tiles[i+1][j+1];
-    }
-  }
-}
-
-void draw_tiles(tile** tiles, size_t size)
-{
-  size_t i, j;
-  tile* temp;
-  char text[2];
-
-  for (i = 1; i <= size; i++)
-  {
-    for (j = 1; j <= size; j++)
-    {
-      temp = &tiles[i][j];
-
-      if (FLAGGED(temp->info))
-	strncpy(text, "F", 2);
-      else if (QFLAGGED(temp->info))
-	strncpy(text, "?", 2);
-      else if (UNKNOWN(temp->info) ||
-	       !NUM_MINES(temp->info))
-	strncpy(text, " ", 2);
-      else
-	sprintf(text, "%d", NUM_MINES(temp->info));
-
-      
-      DrawRectangle(temp->posx, temp->posy,
-		    temp->width, temp->height,
-		    temp->color);
-      DrawRectangleLines(temp->posx, temp->posy,
-		    temp->width, temp->height,
-		    BLACK);
-      DrawText(text, temp->posx + (0.25f * temp->width),
-	       temp->posy + (0.25f * temp->height), 32, BLACK);
-    }
-  }
-}
-
-tile* get_tile(tile** tiles, size_t size)
-{
-  int i, j, mposx, mposy;
-  int posx, posy, width, height;
-
-  mposx = GetMouseX();
-  mposy = GetMouseY();
-
-  for (i = 1; i <= size; i++)
-  {
-    for (j = 1; j <= size; j++)
-    {
-      posx = tiles[i][j].posx;
-      posy = tiles[i][j].posy;
-      width = tiles[i][j].width;
-      height = tiles[i][j].height;
-
-      if (mposx > posx &&
-	mposx < posx + width &&
-	mposy > posy &&
-	mposy < posy + height)
-      {
-	return &tiles[i][j];
-      }
-    }
-  }
-
-  return NULL;
-}
-
-void resize_tiles(tile** tiles, size_t size)
-{
-  size_t i, j;
-  int hoffset, voffset;
-  tile* temp;
-  
-  hoffset = tile_panel.width / size;
-  voffset = tile_panel.height / size;
-
-  for (i = 1; i <= size; i++)
-  {
-    for (j = 1; j <= size; j++)
-    {
-      temp = &tiles[i][j];
-      
-      temp->posx = hoffset * (j-1) + tile_panel.posx;
-      temp->posy = voffset * (i-1) + tile_panel.posy;
-      temp->width = hoffset;
-      temp->height = voffset;
-    }
-  }
-}
-
-void set_num_mines(tile* tile)
-{
-  size_t i;
+  int i;
   uint8_t num_mines;
 
-  if (MINED(tile->info))
-    return;
-  
-  num_mines = 0;
-  for (i = 0; i < 8; i++)
-    if (MINED(tile->neighbors[i]->info))
+  if (tile_is_mined(selected)) return;
+
+  for (i = 0, num_mines = 0; i < 8; i++)
+    if (tile_is_mined(selected->neighbors[i]))
       num_mines++;
 
-  tile->info = SET(tile->info, num_mines);
+  selected->info |= num_mines;
 }
 
-void set_all_num_mines(tile** tiles, size_t size)
+void tile_set_unknown(tile_t* selected, int set)
 {
-  size_t i, j;
-
-  for (i = 1; i < size; i++)
-    for (j = 1; j < size; j++)
-      set_num_mines(&tiles[i][j]);
+  if (set)
+    selected->info |= BIT_UNKNOWN;
+  else
+    selected->info &= ~BIT_UNKNOWN;
 }
 
-uint8_t num_flags(tile* clicked)
+void tile_set_mined(tile_t* selected)
 {
-  size_t i;
-  uint8_t flags;
+  selected->info |= BIT_MINE; 
+}
 
-  flags = 0;
-  for (i = 0; i < 8; i++)
+void tile_set_flagged(tile_t* selected, int set)
+{
+  if (set)
+    selected->info |= BIT_FLAG;
+  else
+    selected->info &= ~BIT_FLAG;
+}
+
+void tile_set_qflagged(tile_t* selected, int set)
+{
+  if (set)
   {
-    if (FLAGGED(clicked->neighbors[i]->info))
-      flags++;
+    selected->info |= BIT_QFLAG;
+    tile_set_flagged(selected, 0);
   }
-
-  return flags;
+  else
+    selected->info &= ~BIT_QFLAG;
 }
 
-int flags_correct(tile* clicked)
+void tile_set_multiple(tile_t* selected, int set, uint8_t flags)
 {
-  size_t i;
-  tile* temp;
+  if (set)
+    selected->info |= flags;
+  else
+    selected->info &= ~flags;
+}
+
+int tile_is_unknown(tile_t* selected)
+{
+  return selected->info & BIT_UNKNOWN;
+}
+
+int tile_is_mined(tile_t* selected)
+{
+  return selected->info & BIT_MINE;
+}
+
+int tile_is_flagged(tile_t* selected)
+{
+  return selected->info & BIT_FLAG;
+}
+
+int tile_is_qflagged(tile_t* selected)
+{
+  return selected->info & BIT_QFLAG;
+}
+
+void tile_highlight(tile_t* selected)
+{
+  static tile_t* hl_tile = NULL;
+  Color temp;
+
+  if (hl_tile)
+    hl_tile->color = GRAY;
+
+  if (!selected || !tile_is_unknown(selected))
+  {
+    hl_tile = NULL;
+  }
+  else
+  {
+    temp = selected->color;
+    hl_tile = selected;
+    hl_tile->color = (Color){temp.r+20,temp.g+20,temp.b+20,255};
+  }  
+}
+
+int tile_get_num_mines(tile_t* selected)
+{
+  return (int) (selected->info & 0xF);
+}
+
+int tile_get_num_flags(tile_t* selected)
+{
+  int i, num_flags;
+
+  for (i = 0, num_flags = 0; i < 8; i++)
+    if (tile_is_flagged(selected->neighbors[i]))
+      num_flags++;
+
+  return num_flags;
+}
+
+int tile_flags_correct(tile_t* selected)
+{
+  int i;
+
+  if (tile_get_num_mines(selected) != tile_get_num_flags(selected))
+    return 0;
 
   for (i = 0; i < 8; i++)
-  {
-    temp = clicked->neighbors[i];
-    if (MINED(temp->info) && !FLAGGED(temp->info))
+    if (tile_is_mined(selected->neighbors[i]) && !tile_is_flagged(selected->neighbors[i]))
       return 0;
-  }
 
   return 1;
 }
+

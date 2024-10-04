@@ -8,26 +8,16 @@
 #include <inttypes.h>
 #include <time.h>
 
-#include "panel.h"
-
 #define BIT_MINE 0x10
 #define BIT_FLAG 0x20
 #define BIT_QFLAG 0x40
 #define BIT_UNKNOWN 0x80
 
-#define MINED(info) ((info) & BIT_MINE)
-#define FLAGGED(info) ((info) & BIT_FLAG)
-#define QFLAGGED(info) ((info) & BIT_QFLAG)
-#define UNKNOWN(info) ((info) & BIT_UNKNOWN)
-#define NUM_MINES(info) ((info) & 0xF)
-#define SET(info, bit) ((info) | (bit))
-#define UNSET(info, bit) ((info) & ~(bit))
-
 typedef uint8_t bitvec_t;
 
-typedef struct tile
+typedef struct tile_t
 {
-  struct tile* neighbors[8];
+  struct tile_t* neighbors[8];
   Color color;
   int posx;
   int posy;
@@ -35,17 +25,24 @@ typedef struct tile
   int height;
   int visited;
   bitvec_t info;
-} tile;
+} tile_t;
 
-tile** init_tiles(size_t size);
-void free_tiles(tile** tiles, size_t size);
-void set_neighbors(tile** tiles, size_t size);
-void draw_tiles(tile** tiles, size_t size);
-tile* get_tile(tile** tiles, size_t size);
-void resize_tiles(tile** tiles, size_t size);
-void set_num_mines(tile* tile);
-void set_all_num_mines(tile** tiles, size_t size);
-uint8_t num_flags(tile* clicked);
-int flags_correct(tile* clicked);
+void tile_set_num_mines(tile_t*);
+void tile_set_unknown(tile_t*, int);
+void tile_set_mined(tile_t*);
+void tile_set_flagged(tile_t*, int);
+void tile_set_qflagged(tile_t*, int);
+void tile_set_multiple(tile_t*, int, uint8_t);
+
+int tile_is_unknown(tile_t*);
+int tile_is_mined(tile_t*);
+int tile_is_flagged(tile_t*);
+int tile_is_qflagged(tile_t*);
+
+void tile_highlight(tile_t*);
+
+int tile_get_num_mines(tile_t*);
+int tile_get_num_flags(tile_t*);
+int tile_flags_correct(tile_t* clicked);
 
 #endif
