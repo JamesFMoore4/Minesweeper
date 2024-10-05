@@ -3,11 +3,15 @@
 
 int main(void)
 {
+  int size;
+  
   game_init();
   while (!WindowShouldClose())
   {
-    game_loop(menu_loop());
+    if (size = menu_loop())
+      game_loop(size);
   }
+    
   game_close(); 
   return 0;
 }

@@ -63,6 +63,7 @@ void grid_draw(grid_t* grid)
   int i, j, num_mines;
   tile_t* temp;
   char text[2];
+  float scale;
 
   for (i = 1; i <= grid->size; i++)
   {
@@ -70,6 +71,7 @@ void grid_draw(grid_t* grid)
     {
       temp = &grid->tiles[i][j];
       num_mines = tile_get_num_mines(temp);
+      scale = grid_get_text_scale(grid->size);
 
       if (tile_is_flagged(temp))
 	strncpy(text, "F", 2);
@@ -87,7 +89,7 @@ void grid_draw(grid_t* grid)
 			 temp->width, temp->height,
 			 BLACK);
       DrawText(text, temp->posx + (0.25f * temp->width),
-	       temp->posy + (0.25f * temp->height), 32,
+	       temp->posy + (0.25f * temp->height), 32*scale,
 	       BLACK);
     }
   }
@@ -188,13 +190,16 @@ void grid_resize(grid_t* grid)
 {
   static int prev_width = DEFAULT_WINDOW_WIDTH;
   static int prev_height = DEFAULT_WINDOW_HEIGHT;
-  int i, j, hoffset, voffset;
+  int i, j, hoffset, voffset, dimension;
   tile_t* temp;
 
   if (prev_width == GetScreenWidth() &&
       prev_height == GetScreenHeight())
     return;
 
+  dimension = GetScreenHeight() - (GRID_VOFFSET*2);
+
+  grid->width = grid->height = dimension;
   hoffset = grid->width / grid->size;
   voffset = grid->width / grid->size;
 
@@ -303,4 +308,17 @@ int grid_all_tiles_discovered(grid_t* grid)
 	total_tiles--;
 
   return !total_tiles;
+}
+
+float grid_get_text_scale(int size)
+{
+  switch(size)
+  {
+  case 8:
+    return 2.0f;
+  case 16:
+    return 1.0f;
+  case 32:
+    return 0.5f;
+  }
 }

@@ -25,5 +25,6 @@ void grid_set_num_mines(grid_t*);
 void grid_resize(grid_t*);
 void grid_discover_safe_tiles(tile_t*, bitvec_t);
 int grid_all_tiles_discovered(grid_t*);
+float grid_get_text_scale(int);
 
 #endif

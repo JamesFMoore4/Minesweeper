@@ -5,7 +5,7 @@
 #include "gamedef.h"
 #include "menu.h"
 
-typedef enum {PREGAME, INGAME} mode;
+typedef enum {PREGAME, INGAME, POSTGAME} mode;
 
 void game_init(void);
 void game_loop(int);

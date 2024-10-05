@@ -43,7 +43,7 @@ void button_draw(button_t* button)
 		     button->width, button->height,
 		     button->outline);
   DrawText(button->text, button->posx +
-	   (0.45f * button->width), button->posy +
-	   (0.45f * button->height), 32,
+	   (0.40f * button->width), button->posy +
+	   (0.40f * button->height), 32,
 	   button->text_color);
 }

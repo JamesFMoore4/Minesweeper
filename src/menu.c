@@ -12,7 +12,7 @@ int menu_loop(void)
   int size;
   button_t* buttons;
 
-  buttons = (button_t*)calloc(3, sizeof(button_t));
+  buttons = (button_t*)calloc(NUM_SIZE_CHOICES, sizeof(button_t));
   menu_buttons_init(buttons);
   size = 0;
 
@@ -23,8 +23,36 @@ int menu_loop(void)
     menu_draw(buttons);
   }
 
-  free_buttons(buttons, 3);
+  free_buttons(buttons, NUM_SIZE_CHOICES);
   return size;
+}
+
+void menu_resize(button_t* buttons)
+{
+  static int prev_width = DEFAULT_WINDOW_WIDTH;
+  static int prev_height = DEFAULT_WINDOW_HEIGHT;
+  int i, base, scr_width, scr_height;
+  int posx, posy, width, height;
+
+  scr_width = GetScreenWidth();
+  scr_height = GetScreenHeight();
+
+  if (prev_width == scr_width && prev_height == scr_height)
+    return;
+  
+  width = 0.25f * scr_width;
+  height = 0.75f * scr_height;
+  posx = (0.33f * scr_width) - width;
+  posy = 0.125f * scr_height;
+
+  for (i = 0; i < NUM_SIZE_CHOICES; i++)
+  {
+    buttons[i].width = width;
+    buttons[i].height = height;
+    buttons[i].posx = posx;
+    buttons[i].posy = posy;
+    posx += width + 25;
+  }
 }
 
 void free_buttons(button_t* buttons, int num)
@@ -45,7 +73,7 @@ static int menu_update(button_t* buttons)
   mposx = GetMouseX();
   mposy = GetMouseY();
   
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < NUM_SIZE_CHOICES; i++)
   {
     if (button_collision(&buttons[i], mposx, mposy))
     {
@@ -53,8 +81,10 @@ static int menu_update(button_t* buttons)
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         size = buttons[i].on_click();
       break;
-    }    
+    }
   }
+
+  menu_resize(buttons);
     
   return size;
 }
@@ -66,7 +96,7 @@ static void menu_draw(button_t* buttons)
   BeginDrawing();
   ClearBackground((Color){75, 75, 75, 255});
   
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < NUM_SIZE_CHOICES; i++)
     button_draw(&buttons[i]);
 
   EndDrawing();
@@ -76,6 +106,7 @@ static void menu_buttons_init(button_t* buttons)
 {
   int i, base, scr_width, scr_height;
   int posx, posy, width, height;
+  button_t* temp;
 
   scr_width = GetScreenWidth();
   scr_height = GetScreenHeight();
@@ -85,7 +116,7 @@ static void menu_buttons_init(button_t* buttons)
   posy = 0.125f * scr_height;
   base = 8;
 
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < NUM_SIZE_CHOICES; i++)
   {
     buttons[i].color = GRAY;
     buttons[i].outline = BLACK;
@@ -97,7 +128,7 @@ static void menu_buttons_init(button_t* buttons)
     buttons[i].text = (char*)calloc(8, sizeof(char));
     sprintf(buttons[i].text, "%dx%d", base, base);
     base *= 2;
-    posx += width + 50;
+    posx += width + 25;
   }
 
   buttons[0].on_click = ret8;

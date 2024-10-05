@@ -3,6 +3,7 @@
 static int game_update(grid_t*, mode*, int);
 static void game_draw(grid_t*);
 static int process_tile_click(tile_t*, int);
+static button_t* game_exit_button_init(void);
 
 void game_init(void)
 {
@@ -19,11 +20,13 @@ void game_loop(int size)
   grid_t* grid;
   int dimension, game_status;
   mode cur_mode;
+  button_t* exit_button;
  
   cur_mode = PREGAME;
   game_status = 0;
-  dimension = 0.75f * GetScreenHeight();
+  dimension = GetScreenHeight() - (GRID_VOFFSET*2);
   grid = grid_init(size, GRID_HOFFSET, GRID_VOFFSET, dimension, dimension);
+  exit_button = game_exit_button_init();
   
   while (!game_status)
   {
@@ -32,6 +35,8 @@ void game_loop(int size)
     game_draw(grid);
   }
 
+  if (exit_button)
+    free_buttons(exit_button, 1);
   grid_free(grid);
 }
 
@@ -108,4 +113,9 @@ static int process_tile_click(tile_t* selected, int game_status)
   }
 
   return game_status;
+}
+
+static button_t* game_exit_button_init(void)
+{
+  return NULL;
 }
