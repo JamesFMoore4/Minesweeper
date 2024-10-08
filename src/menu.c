@@ -12,7 +12,7 @@ int menu_loop(void)
   int size;
   button_t* buttons;
 
-  buttons = (button_t*)calloc(NUM_SIZE_CHOICES, sizeof(button_t));
+  buttons = (button_t*)Calloc(NUM_SIZE_CHOICES, sizeof(button_t));
   menu_buttons_init(buttons);
   size = 0;
 
@@ -22,6 +22,8 @@ int menu_loop(void)
     size = menu_update(buttons);
     menu_draw(buttons);
   }
+
+  button_highlight(NULL, 1);
 
   free_buttons(buttons, NUM_SIZE_CHOICES);
   return size;
@@ -77,7 +79,7 @@ static int menu_update(button_t* buttons)
   {
     if (button_collision(&buttons[i], mposx, mposy))
     {
-      button_highlight(&buttons[i]);
+      button_highlight(&buttons[i], 0);
       if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         size = buttons[i].on_click();
       break;
@@ -125,7 +127,11 @@ static void menu_buttons_init(button_t* buttons)
     buttons[i].height = height;
     buttons[i].posx = posx;
     buttons[i].posy = posy;
-    buttons[i].text = (char*)calloc(8, sizeof(char));
+    buttons[i].text = (char*)Calloc(8, sizeof(char));
+    buttons[i].tposx = buttons[i].posx + (0.40f *
+					  buttons[i].width);
+    buttons[i].tposy = buttons[i].posy + (0.40f *
+					  buttons[i].height);
     sprintf(buttons[i].text, "%dx%d", base, base);
     base *= 2;
     posx += width + 25;

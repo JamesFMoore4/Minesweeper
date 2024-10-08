@@ -1,10 +1,17 @@
 #include "button.h"
 
-void button_highlight(button_t* selected)
+void button_highlight(button_t* selected, int reset)
 {
   static button_t* hl_button = NULL;
   static Color prev_color = (Color){0};
   Color temp;
+
+  if (reset)
+  {
+    hl_button = NULL;
+    prev_color = (Color){0};
+    return;
+  }
 
   if (hl_button)
     hl_button->color = prev_color;
@@ -42,8 +49,6 @@ void button_draw(button_t* button)
   DrawRectangleLines(button->posx, button->posy,
 		     button->width, button->height,
 		     button->outline);
-  DrawText(button->text, button->posx +
-	   (0.40f * button->width), button->posy +
-	   (0.40f * button->height), 32,
+  DrawText(button->text, button->tposx, button->tposy, 32,
 	   button->text_color);
 }

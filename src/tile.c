@@ -74,11 +74,17 @@ int tile_is_qflagged(tile_t* selected)
   return selected->info & BIT_QFLAG;
 }
 
-void tile_highlight(tile_t* selected)
+void tile_highlight(tile_t* selected, int reset)
 {
   static tile_t* hl_tile = NULL;
   tile_t* last;
   Color temp;
+
+  if (reset)
+  {
+    hl_tile = NULL;
+    return;
+  }
 
   if (hl_tile && tile_is_unknown(hl_tile))
     hl_tile->color = GRAY;

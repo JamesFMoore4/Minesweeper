@@ -1,9 +1,10 @@
 #include "game.h"
 
-static int game_update(grid_t*, mode*, int);
-static void game_draw(grid_t*);
-static int process_tile_click(tile_t*, int);
-static button_t* game_exit_button_init(void);
+static int game_update(grid_t*, button_t*, mode*, int);
+static void game_draw(grid_t*, button_t*, int);
+static int process_tile_click(tile_t*);
+static button_t* game_exit_button_init(grid_t*);
+static void game_exit_button_resize(button_t*, grid_t*);
 
 void game_init(void)
 {
@@ -26,17 +27,19 @@ void game_loop(int size)
   game_status = 0;
   dimension = GetScreenHeight() - (GRID_VOFFSET*2);
   grid = grid_init(size, GRID_HOFFSET, GRID_VOFFSET, dimension, dimension);
-  exit_button = game_exit_button_init();
+  exit_button = game_exit_button_init(grid);
   
-  while (!game_status)
+  while (cur_mode != QUIT)
   {
     if (WindowShouldClose()) break;
-    game_status = game_update(grid, &cur_mode, game_status);
-    game_draw(grid);
+    game_status = game_update(grid, exit_button, &cur_mode, game_status);
+    game_draw(grid, exit_button, game_status);
   }
 
-  if (exit_button)
-    free_buttons(exit_button, 1);
+  grid_highlight(grid, 1);
+  button_highlight(NULL, 1);
+    
+  free_buttons(exit_button, 1);
   grid_free(grid);
 }
 
@@ -45,13 +48,20 @@ void game_close(void)
   CloseWindow();
 }
 
-static int game_update(grid_t* grid, mode* cur_mode, int game_status)
+static int game_update(grid_t* grid, button_t* exit_button, mode* cur_mode, int game_status)
 {
   tile_t* selected;
-  int tile_clicked;
+  int tile_clicked, lmb_pressed;
 
-  tile_clicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-    (selected = grid_get_selected_tile(grid));
+  lmb_pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+
+  if (lmb_pressed && button_collision(exit_button, GetMouseX(), GetMouseY()))
+  {
+    *cur_mode = QUIT;
+    return game_status;
+  }
+
+  tile_clicked = lmb_pressed && (selected = grid_get_selected_tile(grid));
 
   if (*cur_mode == PREGAME && tile_clicked)
   {
@@ -62,27 +72,42 @@ static int game_update(grid_t* grid, mode* cur_mode, int game_status)
   }
   else if (*cur_mode == INGAME && tile_clicked)
   {
-    game_status = process_tile_click(selected, game_status);
-    game_status  = !game_status ? grid_all_tiles_discovered(grid) : game_status;
+    game_status = process_tile_click(selected);
+    if (game_status)
+      *cur_mode = POSTGAME;
   }
-  
+  else if (*cur_mode == INGAME)
+  {
+    if (game_status = grid_all_tiles_discovered(grid))
+      *cur_mode = POSTGAME;
+  }
+
   grid_resize(grid);
-  grid_highlight(grid);
-  grid_flag(grid);
+  grid_highlight(grid, 0);
+  if (*cur_mode != POSTGAME)
+    grid_flag(grid);
+
+  button_highlight(exit_button, 0);
+  game_exit_button_resize(exit_button, grid);
 
   return game_status;
 }
 
-static void game_draw(grid_t* grid)
+static void game_draw(grid_t* grid, button_t* exit_button, int game_status)
 {
   BeginDrawing();
   ClearBackground((Color){75, 75, 75, 255});
-  grid_draw(grid);
+  grid_draw(grid, game_status);
+  button_draw(exit_button);
   EndDrawing();
 }
 
-static int process_tile_click(tile_t* selected, int game_status)
-{  
+static int process_tile_click(tile_t* selected)
+{
+  int game_status;
+
+  game_status = 0;
+  
   if (IsKeyDown(KEY_LEFT_SHIFT) && !tile_is_unknown(selected))
   {    
     switch (tile_flags_correct(selected))
@@ -115,7 +140,45 @@ static int process_tile_click(tile_t* selected, int game_status)
   return game_status;
 }
 
-static button_t* game_exit_button_init(void)
+static button_t* game_exit_button_init(grid_t* grid)
 {
-  return NULL;
+  button_t* exit_button;
+
+  exit_button = (button_t*) Malloc(sizeof(button_t));
+
+  exit_button->color = GRAY;
+  exit_button->outline = BLACK;
+  exit_button->text_color = BLACK;
+  exit_button->width = 0.20f * GetScreenWidth();
+  exit_button->height = 0.10f * GetScreenHeight();
+  exit_button->posx = grid->posx + grid->width + 25;
+  exit_button->posy = grid->posy + grid->height - exit_button->height;
+  exit_button->text = (char*) Calloc(12, sizeof(char));
+  exit_button->tposx = exit_button->posx + (0.25f *
+					    exit_button->width);
+  exit_button->tposy = exit_button->posy + (0.25f *
+					    exit_button->height);
+  strncpy(exit_button->text, "Exit Game", 10);
+  exit_button->on_click = NULL;
+  
+  return exit_button;
+}
+
+static void game_exit_button_resize(button_t* exit_button, grid_t* grid)
+{
+  static int prev_width = DEFAULT_WINDOW_WIDTH;
+  static int prev_height = DEFAULT_WINDOW_HEIGHT;
+
+  if (prev_width == GetScreenWidth() &&
+    prev_height == GetScreenHeight())
+    return;
+  
+  exit_button->width = 0.20f * GetScreenWidth();
+  exit_button->height = 0.10f * GetScreenHeight();
+  exit_button->posx = grid->posx + grid->width + GRID_HOFFSET;
+  exit_button->posy = grid->posy + grid->height - exit_button->height;
+  exit_button->tposx = exit_button->posx + (0.25f *
+					    exit_button->width);
+  exit_button->tposy = exit_button->posy + (0.25f *
+					    exit_button->height);
 }

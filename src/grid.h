@@ -2,6 +2,7 @@
 #define GRID
 
 #include "tile.h"
+#include "wrappers.h"
 #include "gamedef.h"
 
 typedef struct
@@ -16,8 +17,8 @@ typedef struct
 
 grid_t* grid_init(int, int, int, int, int);
 void grid_free(grid_t*);
-void grid_draw(grid_t*);
-void grid_highlight(grid_t*);
+void grid_draw(grid_t*, int);
+void grid_highlight(grid_t*, int);
 void grid_flag(grid_t*);
 tile_t* grid_get_selected_tile(grid_t*);
 void grid_set_mines(grid_t*, tile_t*);

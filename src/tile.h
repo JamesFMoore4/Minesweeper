@@ -39,7 +39,7 @@ int tile_is_mined(tile_t*);
 int tile_is_flagged(tile_t*);
 int tile_is_qflagged(tile_t*);
 
-void tile_highlight(tile_t*);
+void tile_highlight(tile_t*, int);
 
 int tile_get_num_mines(tile_t*);
 int tile_get_num_flags(tile_t*);

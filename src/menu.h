@@ -6,6 +6,7 @@
 #include <inttypes.h>
 
 #include "button.h"
+#include "wrappers.h"
 #include "gamedef.h"
 
 int menu_loop(void);

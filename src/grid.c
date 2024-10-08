@@ -10,7 +10,7 @@ grid_t* grid_init(int size, int posx, int posy, int width, int height)
   tile_t* temp;
   int i, j, asize, amount, hoffset, voffset;
 
-  grid = (grid_t*)malloc(sizeof(grid_t));
+  grid = (grid_t*)Malloc(sizeof(grid_t));
   grid->size = size;
   grid->posx = posx;
   grid->posy = posy;
@@ -22,15 +22,15 @@ grid_t* grid_init(int size, int posx, int posy, int width, int height)
   asize = size + 2;
   amount = asize * sizeof(tile_t);
 
-  tiles = (tile_t**)malloc(asize*sizeof(tile_t*));
+  tiles = (tile_t**)Malloc(asize*sizeof(tile_t*));
 
   // Padding to eliminate bounds checking
-  tiles[0] = (tile_t*)calloc(asize, sizeof(tile_t));
-  tiles[asize-1] = (tile_t*)calloc(asize, sizeof(tile_t));
+  tiles[0] = (tile_t*)Calloc(asize, sizeof(tile_t));
+  tiles[asize-1] = (tile_t*)Calloc(asize, sizeof(tile_t));
   
   for (i = 1; i <= size; i++)
   {
-    tiles[i] = (tile_t*)calloc(asize, sizeof(tile_t));
+    tiles[i] = (tile_t*)Calloc(asize, sizeof(tile_t));
     for (j = 1; j <= size; j++)
     {
       temp = &tiles[i][j];
@@ -58,11 +58,12 @@ void grid_free(grid_t* grid)
   free(grid);
 }
 
-void grid_draw(grid_t* grid)
+void grid_draw(grid_t* grid, int draw_mines)
 {
   int i, j, num_mines;
+  int flagged, qflagged, unknown, mined;
   tile_t* temp;
-  char text[2];
+  char text[2], *game_outcome;
   float scale;
 
   for (i = 1; i <= grid->size; i++)
@@ -72,15 +73,25 @@ void grid_draw(grid_t* grid)
       temp = &grid->tiles[i][j];
       num_mines = tile_get_num_mines(temp);
       scale = grid_get_text_scale(grid->size);
+      flagged = tile_is_flagged(temp);
+      qflagged = tile_is_qflagged(temp);
+      unknown = tile_is_unknown(temp);
+      mined = tile_is_mined(temp);
+      
 
-      if (tile_is_flagged(temp))
+      if (flagged)
 	strncpy(text, "F", 2);
-      else if (tile_is_qflagged(temp))
+      else if (qflagged)
 	strncpy(text, "?", 2);
-      else if (tile_is_unknown(temp) || !num_mines)
+      else if (unknown || !num_mines)
 	strncpy(text, " ", 2);
       else
 	sprintf(text, "%d", num_mines);
+
+      if (draw_mines && mined && !flagged && !qflagged)
+	strncpy(text, "*", 2);
+      if (draw_mines == 1 && !mined && unknown)
+	temp->color = BEIGE;
 
       DrawRectangle(temp->posx, temp->posy,
 		    temp->width, temp->height,
@@ -93,11 +104,18 @@ void grid_draw(grid_t* grid)
 	       BLACK);
     }
   }
+  
+  if (draw_mines)
+  {
+    game_outcome = draw_mines == 1 ? "You won!" : "You lost!";
+    DrawText(game_outcome, grid->posx + grid->width + 25,
+	       grid->posy, 32, BLACK);
+  }
 }
 
-void grid_highlight(grid_t* grid)
+void grid_highlight(grid_t* grid, int reset)
 {
-  tile_highlight(grid_get_selected_tile(grid));
+  tile_highlight(grid_get_selected_tile(grid), reset);
 }
 
 void grid_flag(grid_t* grid)
